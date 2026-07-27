@@ -25,8 +25,10 @@
 #   OKTA_CLIENT_ID   Client ID of the registered Okta application.
 #
 # Output:
-#   On success:  "Token: <access_token>"  is written to stdout.
-#   On failure:  an error message followed by the raw JSON response.
+#   On success:  "Token: <access_token>"  is written to stdout; exit status 0.
+#   On failure:  an error message and the raw JSON response are written to
+#                stderr; exit status 1. (Writing to stderr means the error is
+#                still visible when stdout is captured, e.g. VAR="$(... | ...)".)
 #
 # Notes:
 #   - Okta returns HTTP 200 even for invalid credentials, so success is
@@ -53,6 +55,7 @@ result=$(curl --silent --show-error --request POST \
   --data "password=$PASSWORD" \
   --data "scope=$SCOPE")
 
+
 # Okta returns HTTP 200 with an error body on bad credentials, so check for the
 # token itself rather than curl's exit status.
 token=$(echo "$result" | jq -r '.access_token // empty')
@@ -60,6 +63,9 @@ token=$(echo "$result" | jq -r '.access_token // empty')
 if [ -n "$token" ]; then
   echo "Token: $token"
 else
-  echo "Failed to authenticate, check below error"
-  echo "$result"
+  # Write failures to stderr and exit non-zero so errors still surface when
+  # stdout is captured, e.g. TOKEN="$(./get-okta-token.sh | ...)".
+  echo "Failed to authenticate, check below error" >&2
+  echo "$result" >&2
+  exit 1
 fi
