@@ -14,10 +14,14 @@
 #   - jq    (used to parse the JSON response)
 #
 # Usage:
-#   ./get-okta-token.sh
+#   ./get-okta-token.sh [-r|--refresh]
 #
 #   You will be prompted interactively for your username and password
-#   (the password input is hidden). No arguments are required.
+#   (the password input is hidden).
+#
+#   -r, --refresh   Also print the refresh_token (long-lived, used by
+#                   hms-ai-token.sh to mint new access tokens without a
+#                   password). Printed on a separate "Refresh: <token>" line.
 #
 # Configuration (edit the variables below if the environment changes):
 #   OKTA_URL         Base URL of the Okta authorization server.
@@ -25,7 +29,8 @@
 #   OKTA_CLIENT_ID   Client ID of the registered Okta application.
 #
 # Output:
-#   On success:  "Token: <access_token>"  is written to stdout; exit status 0.
+#   On success:  "Token: <access_token>" is written to stdout; with --refresh,
+#                a second "Refresh: <refresh_token>" line follows. Exit status 0.
 #   On failure:  an error message and the raw JSON response are written to
 #                stderr; exit status 1. (Writing to stderr means the error is
 #                still visible when stdout is captured, e.g. VAR="$(... | ...)".)
@@ -40,6 +45,15 @@
 OKTA_URL="https://login.hms.harvard.edu"
 SCOPE="openid offline_access"
 OKTA_CLIENT_ID="0oa139tiylzbW6XnX698"
+
+# Parse arguments: --refresh (-r) also prints the refresh token.
+SHOW_REFRESH=0
+for arg in "$@"; do
+  case "$arg" in
+    -r|--refresh) SHOW_REFRESH=1 ;;
+    *) echo "Unknown option: $arg (use -r/--refresh)" >&2; exit 2 ;;
+  esac
+done
 
 read -rp "Enter Username: " USER_NAME
 read -rsp "Password: " PASSWORD
@@ -62,6 +76,14 @@ token=$(echo "$result" | jq -r '.access_token // empty')
 
 if [ -n "$token" ]; then
   echo "Token: $token"
+  if [ "$SHOW_REFRESH" -eq 1 ]; then
+    refresh=$(echo "$result" | jq -r '.refresh_token // empty')
+    if [ -n "$refresh" ]; then
+      echo "Refresh: $refresh"
+    else
+      echo "Warning: no refresh_token in response (is 'offline_access' in SCOPE?)" >&2
+    fi
+  fi
 else
   # Write failures to stderr and exit non-zero so errors still surface when
   # stdout is captured, e.g. TOKEN="$(./get-okta-token.sh | ...)".

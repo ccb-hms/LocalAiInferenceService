@@ -266,7 +266,8 @@ It prints only the access token to stdout and reads credentials from the
 environment. It supports two modes:
 
 - **Refresh token (recommended, password-free):** set `HMS_REFRESH_TOKEN`
-  (the `refresh_token` returned in step 1 with the `offline_access` scope).
+  (get it with `./get-okta-token.sh --refresh` — see
+  [Keeping the token fresh](#keeping-the-token-fresh)).
 - **Password grant (fallback):** set `HMS_USERNAME` and `HMS_PASSWORD`.
 
 ```bash
@@ -325,7 +326,24 @@ re-acquire the token). If you get `429`, you've hit your LLM quota.
 ## Keeping the token fresh
 
 The `openid offline_access` scope returns a `refresh_token` alongside the access
-token. Use it to obtain new access tokens without re-entering your password:
+token — a long-lived credential that mints new access tokens without your
+password. It's what the Option B helper uses.
+
+**Get your refresh token.** Run `get-okta-token.sh` with `-r`/`--refresh`; it
+prints the refresh token on a second `Refresh:` line:
+
+```bash
+./get-okta-token.sh --refresh
+# Enter Username: your-hms-id
+# Password: ********
+# Token:   eyJraWQiOi...
+# Refresh: 0.AR8A...
+
+# Capture just the refresh token into an env var:
+export HMS_REFRESH_TOKEN="$(./get-okta-token.sh --refresh | awk -F'Refresh: ' '/Refresh:/{print $2}')"
+```
+
+**Use it** to obtain new access tokens without re-entering your password:
 
 ```bash
 curl --silent --request POST \
