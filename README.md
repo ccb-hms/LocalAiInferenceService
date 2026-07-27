@@ -29,6 +29,11 @@ access tokens).
 
 ## TL;DR quickstart
 
+> **Before you start:**
+> - **Username ≠ email.** Your HMS username isn't your HMS email — find it under
+>   [login.hms.harvard.edu → Profile](https://login.hms.harvard.edu/account-settings/profile).
+> - **VPN required.** You must be connected to the HMS VPN to reach the endpoint.
+
 ```bash
 # 1. Get a token (interactive — prompts for your HMS username + password)
 export HMS_AI_TOKEN="$(./get-okta-token.sh | awk -F'Token: ' '/Token:/{print $2}')"
