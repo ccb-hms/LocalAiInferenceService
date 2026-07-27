@@ -6,10 +6,13 @@ secure gateway that checks your identity and usage limits before passing them to
 the model.
 
 **In technical terms:** a GPU inference service that exposes an on-prem large
-language model (LLM) — served by **vLLM** on an **NVIDIA Grace Hopper GH200** — to
-HMS users through a cloud API gateway, secured with Okta-issued JWTs (signed,
-short-lived access tokens). *On-prem* means it runs on HMS's own hardware, not in
-the cloud.
+language model (LLM) to HMS users through a cloud API gateway. The gateway
+speaks both the **Anthropic Messages API** and the **OpenAI API**, so you can
+call it from Anthropic- or OpenAI-based clients (Claude Code, OpenAI SDKs,
+LiteLLM, etc.) without changing tooling. The model is served by **vLLM** on an
+**NVIDIA Grace Hopper GH200**. *On-prem* means it runs on HMS's own hardware,
+not in the cloud. Access is secured with Okta-issued JWTs (signed, short-lived
+access tokens).
 
 ## Contents
 
@@ -17,7 +20,10 @@ the cloud.
 - [How it works](#how-it-works)
 - [1. Acquire a token](#1-acquire-a-token)
 - [2. Make a test call with curl](#2-make-a-test-call-with-curl)
+  - [OpenAI-compatible API](#openai-compatible-api)
 - [3. Use the endpoint with Claude Code](#3-use-the-endpoint-with-claude-code)
+  - [Option A — quick start](#option-a--quick-start-static-token-via-environment)
+  - [Option B — recommended: auto-refreshing token](#option-b--recommended-auto-refreshing-token-via-apikeyhelper)
 - [Keeping the token fresh](#keeping-the-token-fresh)
 - [Troubleshooting](#troubleshooting)
 
@@ -93,24 +99,6 @@ In short, three phases:
    - Over quota → `429`
 3. **Inference.** On success, APIM forwards your request to the on-prem model and
    returns the response.
-
-The values you'll need to configure the endpoints below — Okta identifiers, the
-gateway URL, and the backend model — are collected here for reference:
-
-| Component | Value |
-| --- | --- |
-| Okta base URL | `https://login.hms.harvard.edu` |
-| Okta authorization server | `aus155lzzptyDTgN3698` |
-| Okta client ID | `0oa139tiylzbW6XnX698` |
-| APIM gateway | `https://ai-poc.hms.edu/` |
-| Gateway API surface | Anthropic Messages API (`/v1/messages`) |
-| Backend | vLLM on NVIDIA Grace Hopper GH200 |
-| Model ID | `google/gemma-4-31B-it` |
-
-> **Note:** Endpoints, quotas, and the model served may change —
-> check with the platform team for the current model ID. The gateway speaks the
-> Anthropic Messages API; the vLLM backend behind it is served under the model
-> name `google/gemma-4-31B-it`.
 
 ---
 
@@ -247,13 +235,14 @@ resolves to it regardless of which tier Claude Code picks.
 ### Option A — quick start (static token via environment)
 
 Good for a single session. The token expires, so you'll re-run this when it does.
+Export these in your shell before launching `claude`:
 
 ```bash
-ANTHROPIC_BASE_URL=https://ai-poc.hms.edu
-ANTHROPIC_DEFAULT_OPUS_MODEL=google/gemma-4-31B-it
-ANTHROPIC_DEFAULT_SONNET_MODEL=google/gemma-4-31B-it
-ANTHROPIC_DEFAULT_HAIKU_MODEL=google/gemma-4-31B-it
-ANTHROPIC_AUTH_TOKEN=[YOUR_TOKEN_HERE]
+export ANTHROPIC_BASE_URL='https://ai-poc.hms.edu'
+export ANTHROPIC_DEFAULT_OPUS_MODEL='google/gemma-4-31B-it'
+export ANTHROPIC_DEFAULT_SONNET_MODEL='google/gemma-4-31B-it'
+export ANTHROPIC_DEFAULT_HAIKU_MODEL='google/gemma-4-31B-it'
+export ANTHROPIC_AUTH_TOKEN='[YOUR_TOKEN_HERE]'
 ```
 
 Set `ANTHROPIC_AUTH_TOKEN` to the JWT from step 1 (e.g. `$HMS_AI_TOKEN`). It is
