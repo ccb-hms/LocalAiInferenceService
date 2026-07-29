@@ -14,10 +14,10 @@
 #   - jq    (used to parse the JSON response)
 #
 # Usage:
-#   ./get-okta-token.sh [--refresh]
+#   ./get-okta-token.sh [-r|--refresh]
 #
 #   You will be prompted interactively for your username and password
-#   (the password input is hidden). Pass --refresh to print the refresh
+#   (the password input is hidden). Pass -r/--refresh to print the refresh
 #   token instead of the access token.
 #
 # Configuration (edit the variables below if the environment changes):
@@ -42,9 +42,9 @@ SCOPE="openid offline_access"
 OKTA_CLIENT_ID="0oa139tiylzbW6XnX698"
 
 WANT_REFRESH=false
-if [ "$1" = "--refresh" ]; then
-  WANT_REFRESH=true
-fi
+case "$1" in
+  -r|--refresh) WANT_REFRESH=true ;;
+esac
 
 read -rp "Enter Username: " USER_NAME
 read -rsp "Password: " PASSWORD
