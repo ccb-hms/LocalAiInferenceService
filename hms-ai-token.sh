@@ -123,7 +123,9 @@ save_refresh() {
   local value="$1" tmp
   tmp="$(mktemp -- "$REFRESH_FILE.XXXXXX")" \
     || die "could not write to $(dirname -- "$REFRESH_FILE")"
-  chmod 600 -- "$tmp"
+  # No '--' here: BSD chmod (macOS) has no end-of-options marker and would treat
+  # it as a filename. mktemp already creates the file 600; this is belt and braces.
+  chmod 600 "$tmp"
   printf '%s\n' "$value" > "$tmp"
   # Rename, rather than overwrite in place, so the file is never half-written.
   mv -f -- "$tmp" "$REFRESH_FILE"
