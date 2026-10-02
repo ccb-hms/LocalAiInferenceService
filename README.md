@@ -24,8 +24,8 @@ without changing tooling. *On-prem* means HMS's own hardware, not the cloud.
 ## Before you start
 
 - **You must be on the HMS VPN.** The endpoint is unreachable otherwise.
-- **Your HMS username is not your email.** Find it under
-  [login.hms.harvard.edu → Profile](https://login.hms.harvard.edu/account-settings/profile).
+- **Your HMS username is not your outlook email address.** Find it under
+  [login.hms.harvard.edu → Profile](https://login.hms.harvard.edu/account-settings/profile) (e.g. USER123@MED.HARVARD.EDU).
 
 ## Quickstart
 
