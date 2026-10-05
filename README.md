@@ -15,7 +15,7 @@ without changing tooling. *On-prem* means HMS's own hardware, not the cloud.
 |              |                                                                                                |
 | ------------ | ---------------------------------------------------------------------------------------------- |
 | **Base URL** | `https://ai-poc.hms.edu`                                                                       |
-| **Model ID** | `google/gemma-4-31B-it`                                                                        |
+| **Model ID** | `muse-glimmer`                                                                        |
 | **Anthropic**| `POST /v1/messages`                                                                            |
 | **OpenAI**   | `POST /v1/chat/completions`, `GET /v1/models`                                                   |
 | **Auth**     | `Authorization: Bearer <Okta JWT>` — short-lived, refreshable                                   |
@@ -38,15 +38,15 @@ curl --silent https://ai-poc.hms.edu/v1/messages \
   --header "Authorization: Bearer $HMS_AI_TOKEN" \
   --header "anthropic-version: 2023-06-01" \
   --header "Content-Type: application/json" \
-  --data '{"model":"google/gemma-4-31B-it","max_tokens":256,
+  --data '{"model":"muse-glimmer","max_tokens":256,
            "messages":[{"role":"user","content":"Say hello in one sentence."}]}'
 
 # 3. Point a client at it — Claude Code, for example
 export ANTHROPIC_BASE_URL=https://ai-poc.hms.edu
 export ANTHROPIC_AUTH_TOKEN="$HMS_AI_TOKEN"
-export ANTHROPIC_DEFAULT_OPUS_MODEL=google/gemma-4-31B-it
-export ANTHROPIC_DEFAULT_SONNET_MODEL=google/gemma-4-31B-it
-export ANTHROPIC_DEFAULT_HAIKU_MODEL=google/gemma-4-31B-it
+export ANTHROPIC_DEFAULT_OPUS_MODEL=muse-glimmer
+export ANTHROPIC_DEFAULT_SONNET_MODEL=muse-glimmer
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=muse-glimmer
 claude
 ```
 
@@ -160,7 +160,7 @@ curl --silent https://ai-poc.hms.edu/v1/messages \
   --header "anthropic-version: 2023-06-01" \
   --header "Content-Type: application/json" \
   --data '{
-    "model": "google/gemma-4-31B-it",
+    "model": "muse-glimmer",
     "max_tokens": 256,
     "messages": [
       { "role": "user", "content": "Say hello in one sentence." }
@@ -176,7 +176,7 @@ curl --silent -o /dev/null -w "%{http_code}\n" https://ai-poc.hms.edu/v1/message
   --header "Authorization: Bearer $HMS_AI_TOKEN" \
   --header "anthropic-version: 2023-06-01" \
   --header "Content-Type: application/json" \
-  --data '{"model":"google/gemma-4-31B-it","max_tokens":1,"messages":[{"role":"user","content":"hi"}]}'
+  --data '{"model":"muse-glimmer","max_tokens":1,"messages":[{"role":"user","content":"hi"}]}'
 ```
 
 ### OpenAI API
@@ -190,7 +190,7 @@ curl --silent https://ai-poc.hms.edu/v1/chat/completions \
   --header "Authorization: Bearer $HMS_AI_TOKEN" \
   --header "Content-Type: application/json" \
   --data '{
-    "model": "google/gemma-4-31B-it",
+    "model": "muse-glimmer",
     "messages": [
       { "role": "user", "content": "Say hello in one sentence." }
     ]
@@ -211,7 +211,7 @@ curl --silent https://ai-poc.hms.edu/v1/models \
 Claude Code works with any Anthropic-compatible gateway: it POSTs to
 `ANTHROPIC_BASE_URL` + `/v1/messages` with a bearer token. It requests three
 model tiers (Opus / Sonnet / Haiku) depending on the task, but the gateway serves
-one model — so point all three tiers at `google/gemma-4-31B-it` and every
+one model — so point all three tiers at `muse-glimmer` and every
 request resolves there whichever tier it picks.
 
 Pick one of two setups:
@@ -227,9 +227,9 @@ Pick one of two setups:
 ```bash
 export ANTHROPIC_BASE_URL='https://ai-poc.hms.edu'
 export ANTHROPIC_AUTH_TOKEN="$HMS_AI_TOKEN"   # the JWT from step 1
-export ANTHROPIC_DEFAULT_OPUS_MODEL='google/gemma-4-31B-it'
-export ANTHROPIC_DEFAULT_SONNET_MODEL='google/gemma-4-31B-it'
-export ANTHROPIC_DEFAULT_HAIKU_MODEL='google/gemma-4-31B-it'
+export ANTHROPIC_DEFAULT_OPUS_MODEL='muse-glimmer'
+export ANTHROPIC_DEFAULT_SONNET_MODEL='muse-glimmer'
+export ANTHROPIC_DEFAULT_HAIKU_MODEL='muse-glimmer'
 ```
 
 Use `ANTHROPIC_AUTH_TOKEN`, **not** `ANTHROPIC_API_KEY`: the former sends
@@ -279,9 +279,9 @@ project's `.claude/settings.json`:
   "apiKeyHelper": "/home/you/.claude/hms-ai-token.sh",
   "env": {
     "ANTHROPIC_BASE_URL": "https://ai-poc.hms.edu",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "google/gemma-4-31B-it",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "google/gemma-4-31B-it",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "google/gemma-4-31B-it",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "muse-glimmer",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "muse-glimmer",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "muse-glimmer",
     "CLAUDE_CODE_API_KEY_HELPER_TTL_MS": "300000",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
   }
@@ -377,5 +377,5 @@ echo "$response" | jq -r '.refresh_token' > ~/.claude/.hms_refresh_token # use n
 | `invalid_grant: The refresh token is invalid or expired` — works at first, then fails | The rotated refresh token wasn't saved, so a retired one is being replayed. Classically: it's in `HMS_REFRESH_TOKEN` rather than a file | Use `hms-ai-token.sh`, which manages the file itself; re-seed with `get-okta-token.sh --refresh`. See [Refresh tokens](#refresh-tokens) |
 | `timed out waiting for another token refresh to finish` | A crashed run left `~/.claude/.hms_refresh_token.lock` behind | Locks older than 2 minutes clear themselves; otherwise `rmdir ~/.claude/.hms_refresh_token.lock` |
 | Claude Code ignores your token | `ANTHROPIC_API_KEY` is set (takes the `x-api-key` path), or a settings `env` block overrides your shell var | Use `ANTHROPIC_AUTH_TOKEN` or `apiKeyHelper`; check `~/.claude/settings.json` |
-| Model-not-found | Wrong model ID | Use `google/gemma-4-31B-it`; `GET /v1/models` lists what the backend serves |
+| Model-not-found | Wrong model ID | Use `muse-glimmer`; `GET /v1/models` lists what the backend serves |
 | Nothing connects at all | Not on the HMS VPN | Connect and retry |
